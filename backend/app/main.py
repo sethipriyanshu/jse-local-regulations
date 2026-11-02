@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import admin_auth, health
+from app.api import admin_auth, health, jurisdictions
 from app.config import get_settings
 
 
@@ -17,6 +17,7 @@ def create_app() -> FastAPI:
                   openapi_url="/api/openapi.json")
     app.include_router(health.router, prefix="/api")
     app.include_router(admin_auth.router, prefix="/api")
+    app.include_router(jurisdictions.router, prefix="/api")
 
     if settings.static_dir:
         _mount_spa(app, settings.static_dir)

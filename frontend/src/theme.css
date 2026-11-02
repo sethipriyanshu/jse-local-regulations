@@ -154,8 +154,9 @@ h1.page-title { font-size: 28px; margin: 0 0 8px; }
   --warn: #c28a00;
 }
 
-.app { min-height: 100vh; display: flex; flex-direction: column; }
-.app-main { flex: 1; display: flex; flex-direction: column; }
+/* The app is exactly one viewport tall; only .app-main (or the side panel) scrolls. */
+.app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+.app-main { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
 .app-header { position: sticky; top: 0; z-index: 10; }
 
 .admin-pill {
@@ -178,20 +179,9 @@ h1.page-title { font-size: 28px; margin: 0 0 8px; }
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 380px;
-  min-height: calc(100vh - var(--header-h));
+  height: 100%;
+  min-height: 480px;
 }
-.map-stage {
-  position: relative;
-  background:
-    linear-gradient(var(--rule-soft) 1px, transparent 1px) 0 0 / 40px 40px,
-    linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px) 0 0 / 40px 40px,
-    var(--surface);
-  display: grid;
-  place-items: center;
-}
-.map-placeholder { text-align: center; max-width: 36ch; color: var(--ink-3); }
-.map-placeholder h2 { margin: 0 0 8px; font-size: 22px; }
-
 .side-panel {
   border-left: 1px solid var(--rule);
   background: var(--bg);
@@ -258,4 +248,249 @@ h1.page-title { font-size: 28px; margin: 0 0 8px; }
   .side-panel { border-left: none; border-top: 1px solid var(--rule); }
   .app-header { padding: 0 16px; gap: 16px; }
   .app-title span { display: none; }
+}
+
+/* ---- Map ---------------------------------------------------------------- */
+
+.map-stage { position: relative; min-height: 0; background: #eef1f4; }
+.map-wrap, .map-canvas { position: absolute; inset: 0; }
+.map-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-3); }
+.maplibregl-ctrl-group { border-radius: var(--radius-sm) !important; box-shadow: var(--shadow) !important; }
+
+.map-overlay-top {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: min(440px, calc(100% - 80px));
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.map-notice {
+  background: var(--bg);
+  border-left: 3px solid var(--brand);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lift);
+  padding: 10px 14px;
+  font-size: 13px;
+  animation: panel-in 0.2s ease-out;
+}
+
+.map-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lift);
+  padding: 8px 12px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+.map-tooltip span { color: var(--ink-3); display: inline-flex; align-items: center; gap: 6px; }
+
+.map-legend {
+  position: absolute;
+  left: 16px;
+  bottom: 28px;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 10px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: var(--ink-2);
+  max-width: calc(100% - 32px);
+}
+.map-legend span, .status-badge { display: inline-flex; align-items: center; gap: 6px; }
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  display: inline-block;
+  flex: none;
+}
+
+.metro-pin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--brand);
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s ease;
+}
+.metro-pin:hover { transform: scale(1.35); }
+
+.address-pin {
+  width: 22px;
+  height: 22px;
+  background: var(--ink);
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  animation: pin-drop 0.35s ease-out;
+}
+@keyframes pin-drop {
+  from { opacity: 0; translate: 0 -14px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+/* ---- Search ------------------------------------------------------------- */
+
+.search { position: relative; }
+.search-field { position: relative; display: flex; align-items: center; }
+.search-icon { position: absolute; left: 14px; width: 18px; height: 18px; color: var(--ink-3); }
+.search input {
+  width: 100%;
+  font: inherit;
+  font-size: 15px;
+  padding: 13px 44px 13px 42px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--bg);
+  box-shadow: var(--shadow-lift);
+}
+.search input:focus { outline: none; border-color: var(--brand); }
+.spinner {
+  position: absolute;
+  right: 16px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--rule);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.search-results {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 6px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lift);
+  max-height: 360px;
+  overflow-y: auto;
+}
+.search-results li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+}
+.search-results li.active, .search-results li:hover { background: var(--surface); }
+.sr-meta { display: inline-flex; gap: 8px; align-items: center; color: var(--ink-3); font-size: 12px; white-space: nowrap; }
+.sr-address { border-top: 1px solid var(--rule-soft); margin-top: 4px; color: var(--brand); }
+
+/* ---- Jurisdiction panel ------------------------------------------------- */
+
+.jp { display: flex; flex-direction: column; }
+.jp-top { margin-bottom: 14px; }
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--brand);
+  cursor: pointer;
+}
+.link-btn:hover { text-decoration: underline; }
+.back-btn { font-size: 13px; font-weight: 600; }
+
+.stack-trail { font-size: 13px; color: var(--ink-3); margin-bottom: 6px; }
+.stack-sep { margin: 0 6px; color: var(--rule); }
+.stack-current { color: var(--ink-2); }
+.title-state { color: var(--ink-3); font-weight: 600; }
+
+.badge-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 8px; font-size: 13px; }
+.tag {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+.tag-brand { color: var(--brand); background: var(--brand-soft); }
+.status-badge { font-size: 13px; color: var(--ink-2); }
+
+.jp-section { border-top: 1px solid var(--rule-soft); padding-top: 16px; margin-top: 16px; }
+.jp-section h2 {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 10px;
+}
+.jp-section .chip-row { margin-bottom: 0; }
+.chip-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.layer-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.layer-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-sm);
+}
+.layer-list strong { display: block; font-size: 14px; }
+.layer-type { font-size: 12px; color: var(--ink-3); }
+
+.address-card {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.address-card .eyebrow { margin-bottom: 2px; }
+.address-line { margin: 0; font-weight: 600; font-size: 14px; }
+.address-note { margin: 4px 0 0; font-size: 13px; color: var(--ink-3); }
+
+.empty-state p { color: var(--ink-3); font-size: 14px; margin: 0 0 12px; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--rule-soft) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.skeleton-title { height: 28px; width: 70%; }
+.skeleton-line { height: 14px; width: 45%; }
+.skeleton-block { height: 120px; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+@media (max-width: 860px) {
+  .map-overlay-top { width: calc(100% - 72px); }
+  .map-legend { bottom: 24px; }
 }

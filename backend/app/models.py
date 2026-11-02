@@ -158,6 +158,18 @@ class Jurisdiction(Base):
     parent: Mapped["Jurisdiction | None"] = relationship(remote_side=[id])
 
 
+class PlaceCounty(Base):
+    """Which counties a city lies in. Many-to-many: Atlanta spans Fulton and DeKalb,
+    Dallas spans five counties. Seeded for pilots, then learned from geocoded addresses."""
+
+    __tablename__ = "place_counties"
+
+    place_id: Mapped[int] = mapped_column(ForeignKey("jurisdictions.id"), primary_key=True)
+    county_id: Mapped[int] = mapped_column(
+        ForeignKey("jurisdictions.id"), primary_key=True, index=True
+    )
+
+
 class Taxonomy(Base):
     """Disciplines and categories. Kept as data because the final scope will be
     defined by a JSE engineer before production (PLAN.md D3)."""

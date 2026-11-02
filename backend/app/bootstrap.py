@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_engine
+from app.jurisdictions import load_jurisdictions
 from app.models import Taxonomy, TaxonomyKind
 
 log = logging.getLogger("bootstrap")
@@ -82,6 +83,7 @@ def main() -> None:
     migrate()
     with Session(get_engine()) as session:
         log.info("taxonomy rows added: %d", seed_taxonomy(session))
+        log.info("jurisdictions added: %d", load_jurisdictions(session))
 
 
 if __name__ == "__main__":

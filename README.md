@@ -41,13 +41,13 @@ cp .env.example .env
 # 1. Databases: SQL Server on :1433, Azurite blob on :10000
 docker compose up -d
 
-# 2. Backend on :8000
+# 2. Backend on :8001 (8000 is often taken by the MEP-QC app)
 cd backend
 uv sync
 uv run python -m app.bootstrap      # creates jse_regs, runs migrations, seeds taxonomy
-uv run uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload --port 8001
 
-# 3. Frontend on :5173 (proxies /api to :8000)
+# 3. Frontend on :5173 (proxies /api to :8001)
 cd frontend
 npm install
 npm run dev

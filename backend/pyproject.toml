@@ -10,6 +10,7 @@ dependencies = [
     "alembic>=1.14",
     "pymssql>=2.3.2",
     "pydantic-settings>=2.6",
+    "httpx>=0.27",
 ]
 
 [dependency-groups]
