@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+.venv/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# environment / local config
+.env
+.env.*
+!.env.example
+*.local
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.db
+
+# private brand assets (never commit)
+Brand Materials/
+*Brand Guidelines*.pdf
+
+# os / editor
+.DS_Store

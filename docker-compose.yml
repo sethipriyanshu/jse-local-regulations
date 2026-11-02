@@ -1,0 +1,56 @@
+# Local development dependencies.
+#
+#   docker compose up -d                 -> SQL Server + Azurite (run API/frontend on the host)
+#   docker compose --profile app up      -> also builds and runs the full app on http://localhost:8080
+#
+# SQL Server has no native arm64 image; on Apple Silicon it runs under Rosetta
+# (Docker Desktop > Settings > General > "Use Rosetta for x86/amd64 emulation").
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "LocalDev_Passw0rd!"
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    command: azurite-blob --blobHost 0.0.0.0 --loose
+    ports:
+      - "10000:10000"
+    volumes:
+      - azuritedata:/data
+
+  app:
+    profiles: [app]
+    build: .
+    environment:
+      ENV: local
+      DATABASE_URL: mssql+pymssql://sa:LocalDev_Passw0rd!@sqlserver:1433/jse_regs
+      STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      ADMIN_PASSCODE: ${ADMIN_PASSCODE:-change-me}
+      SESSION_SECRET: local-compose-secret
+    command: sh -c "python -m app.bootstrap && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8080:8000"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+
+volumes:
+  sqldata:
+  azuritedata:
