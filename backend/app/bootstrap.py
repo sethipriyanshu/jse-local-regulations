@@ -17,33 +17,10 @@ from app.config import get_settings
 from app.db import get_engine
 from app.jurisdictions import load_jurisdictions
 from app.models import Taxonomy, TaxonomyKind
+from app.taxonomy import CATEGORIES, DISCIPLINES
 
 log = logging.getLogger("bootstrap")
 BACKEND_DIR = Path(__file__).resolve().parents[1]
-
-# Provisional taxonomy (PLAN.md §1.5). Admins can edit it later; this only inserts missing keys.
-DISCIPLINES = [
-    ("mechanical", "Mechanical"),
-    ("electrical", "Electrical"),
-    ("plumbing", "Plumbing"),
-    ("fire_protection", "Fire Protection"),
-    ("fuel_gas", "Fuel Gas"),
-    ("energy", "Energy"),
-    ("general", "General / Admin"),
-]
-CATEGORIES = [
-    ("adopted_code", "Adopted code & edition"),
-    ("local_amendment", "Local amendment"),
-    ("permit_submittal", "Permit & submittal requirement"),
-    ("plan_review", "Plan review requirement"),
-    ("inspection", "Inspection requirement"),
-    ("licensing", "Licensing & seal requirement"),
-    ("utility", "Utility requirement"),
-    ("environmental", "Environmental"),
-    ("fees", "Fees"),
-    ("pending_change", "Pending / proposed change"),
-]
-
 
 def ensure_database() -> None:
     url = make_url(get_settings().database_url)

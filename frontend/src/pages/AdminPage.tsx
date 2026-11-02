@@ -1,39 +1,57 @@
-import { useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import SourceQueue from '../components/SourceQueue'
 import { useAdmin } from '../lib/admin'
 import { ApiError } from '../lib/api'
+import { getQueue, type Queue } from '../lib/sources'
 
 export default function AdminPage() {
   const { isAdmin, checked, logout } = useAdmin()
 
   if (!checked) return <div className="page" aria-busy="true" />
   if (!isAdmin) return <AdminLogin />
+  return <AdminConsole onLogout={() => void logout()} />
+}
+
+function AdminConsole({ onLogout }: { onLogout: () => void }) {
+  const [queue, setQueue] = useState<Queue | null>(null)
+  const [error, setError] = useState(false)
+  const load = useCallback(() => {
+    getQueue().then(setQueue).catch(() => setError(true))
+  }, [])
+  useEffect(load, [load])
 
   return (
     <div className="page">
       <p className="eyebrow">Admin</p>
       <div className="page-head">
-        <h1 className="page-title">Admin console</h1>
-        <button type="button" className="btn btn-secondary" onClick={() => void logout()}>
+        <h1 className="page-title">Review queue</h1>
+        <button type="button" className="btn btn-secondary" onClick={onLogout}>
           Exit admin view
         </button>
       </div>
       <p className="page-sub">
-        Review submissions, approve sources, and watch the daily monitor. These sections fill in as
-        the pipeline is built.
+        Approve sources to start monitoring them; the AI extracts their MEP rules as pending items.
       </p>
-      <div className="tile-grid">
-        {[
-          ['Review queue', 'Submissions, AI-extracted rules, and detected changes'],
-          ['Discover sources', 'AI search for official sources, per jurisdiction or in bulk'],
-          ['Jobs & health', 'Daily monitor runs, broken sources, AI spend'],
-          ['Teams', 'Channels that receive the daily digest and alerts'],
-        ].map(([title, desc]) => (
-          <div key={title} className="card tile tile-disabled">
-            <h3>{title}</h3>
-            <p>{desc}</p>
-          </div>
-        ))}
+
+      <div className="stat-row">
+        <Stat label="Sources to review" value={queue?.counts.sources} />
+        <Stat label="Rules pending verification" value={queue?.counts.rules} hint="Review UI arrives in week 5" />
+        <Stat label="Detected changes" value={queue?.counts.changes} hint="Daily monitor arrives in week 7" />
       </div>
+
+      <h2 className="section-title">Submitted sources</h2>
+      {error && <p className="form-error">Could not load the queue.</p>}
+      {!queue && !error && <div className="skeleton skeleton-block" />}
+      {queue && <SourceQueue sources={queue.sources} onChanged={load} />}
+    </div>
+  )
+}
+
+function Stat({ label, value, hint }: { label: string; value: number | undefined; hint?: string }) {
+  return (
+    <div className="card stat" title={hint}>
+      <span className="stat-value">{value ?? '–'}</span>
+      <span className="stat-label">{label}</span>
     </div>
   )
 }

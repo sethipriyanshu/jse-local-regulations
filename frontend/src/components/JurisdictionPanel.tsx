@@ -1,3 +1,4 @@
+import RegulationsSection from './RegulationsSection'
 import { STATUS_COLOR } from './UsMap'
 import {
   STATUS_LABEL,
@@ -128,17 +129,7 @@ export default function JurisdictionPanel({ detail, loading, error, address, onS
         </section>
       )}
 
-      <section className="jp-section empty-state">
-        <h2>No regulations recorded yet</h2>
-        <p>
-          {j.is_pilot
-            ? 'This is a pilot jurisdiction. Sources are being collected and reviewed.'
-            : 'This area is outside the pilot. You can still suggest an official source.'}
-        </p>
-        <button type="button" className="btn btn-secondary" disabled title="Arrives in week 3">
-          Suggest a source
-        </button>
-      </section>
+      <RegulationsSection fips={j.fips} placeName={j.name} isPilot={j.is_pilot} />
     </div>
   )
 }

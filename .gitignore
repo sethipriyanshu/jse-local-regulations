@@ -26,3 +26,7 @@ Brand Materials/
 
 # os / editor
 .DS_Store
+
+# local dev data
+.data/
+local.db
