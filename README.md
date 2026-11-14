@@ -2,7 +2,16 @@
 
 An internal Jordan & Skala Engineers portal for tracking the location-specific rules that affect MEP design. Users pick a county on a US map (or type a project address) and see adopted code editions, local amendments, and permit/submittal requirements. Every item has a source, and the data exports to JSON, Word, or PDF. A daily job watches approved sources for changes and posts a digest to Microsoft Teams.
 
-**Status:** MVP feature-complete (weeks 1–8 of [PLAN.md](PLAN.md)). Next: seeding the pilot metros and deploying to Azure. Admins: start with [docs/admin-guide.md](docs/admin-guide.md).
+**Status:** MVP feature-complete (weeks 1–8 of [PLAN.md](PLAN.md)). Next: seeding the pilot metros and deploying to Azure. 
+
+## Guides
+
+| Guide | For |
+|---|---|
+| [User guide](docs/user-guide.md) | Engineers looking up a project's rules and downloading reports |
+| [Admin guide](docs/admin-guide.md) | Reviewing sources and rules, AI discovery, Teams |
+| [Development guide](docs/development-guide.md) | Running the code locally and making changes |
+| [Deployment guide](docs/deployment-guide.md) | Putting it on Azure and keeping it running |
 
 ## What it does
 
@@ -97,4 +106,4 @@ Review the generated file in `migrations/versions/`. `tests/test_migrations.py` 
 
 ## Deploying
 
-See [infra/README.md](infra/README.md).
+See the [deployment guide](docs/deployment-guide.md) (technical detail in [infra/README.md](infra/README.md)).
