@@ -634,3 +634,137 @@ a.queue-url:hover { color: var(--brand); }
   .queue-item { flex-direction: column; }
   .field-row { flex-direction: column; }
 }
+
+/* ---- Week 5–8: detail tabs, review lanes, ops ---- */
+.muted-note { font-size: 12.5px; color: var(--ink-3); margin: 8px 0 0; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.check input { accent-color: var(--brand); }
+.page-wide { max-width: 1240px; }
+
+.detail-tabs-row { display: flex; flex-direction: column; align-items: stretch; gap: 10px; margin-top: 18px; }
+.detail-tabs-row .export-menu { align-self: flex-end; margin-top: -6px; }
+.detail-tabs { flex-wrap: wrap; align-self: flex-start; }
+.export-menu { position: relative; }
+.export-pop {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 250px;
+  padding: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-lift);
+}
+.export-pop .eyebrow { margin-bottom: 4px; }
+.export-item {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  padding: 8px 10px; border-radius: var(--radius-sm); color: var(--ink); text-decoration: none;
+}
+.export-item:hover { background: var(--brand-soft); color: var(--brand-dark); }
+.export-item span { font-size: 12px; color: var(--ink-3); }
+.export-pop .check { margin-top: 6px; padding: 6px 2px 0; border-top: 1px solid var(--rule-soft); }
+
+.override-note { display: block; font-size: 11.5px; color: var(--ink-3); }
+.rule-filters { display: flex; flex-direction: column; gap: 10px; }
+.filter-search {
+  font: inherit; font-size: 14px; padding: 8px 12px; border: 1px solid var(--rule);
+  border-radius: var(--radius-sm); width: 100%;
+}
+.filter-search:focus { outline: none; border-color: var(--brand); }
+.tag-layer { background: #f1ece7; color: var(--umber); }
+.tag-warn { color: var(--umber); background: var(--inconclusive-soft); }
+.rule-links { display: flex; gap: 14px; }
+.history-list { margin: 8px 0 0; padding-left: 16px; font-size: 13px; color: var(--ink-3); }
+
+.timeline { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 2px solid var(--rule-soft); }
+.timeline li { position: relative; padding: 0 0 18px 12px; }
+.timeline li::before {
+  content: ''; position: absolute; left: -23px; top: 6px; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--camel); border: 2px solid #fff;
+}
+.timeline li.tl-verified::before { background: var(--pass); }
+.timeline li.tl-change::before { background: var(--brand); }
+.timeline p { margin: 2px 0; font-size: 13.5px; color: var(--ink-2); }
+.tl-when, .tl-where { display: block; font-size: 12px; color: var(--ink-3); }
+
+.admin-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); margin: 0 0 24px; overflow-x: auto; }
+.admin-tab {
+  font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--ink-3);
+  background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px 9px;
+  cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center;
+}
+.admin-tab:hover { color: var(--ink); }
+.admin-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+.tab-count {
+  font-size: 11px; background: var(--brand); color: #fff; border-radius: 999px; padding: 1px 7px;
+}
+.stat-btn { text-align: left; font: inherit; color: inherit; cursor: pointer; border: 1px solid var(--rule-soft); }
+.stat-btn:hover { border-color: var(--brand); }
+.stat-bad .stat-value { color: var(--brand); }
+
+.review-groups { display: flex; flex-direction: column; gap: 16px; }
+.review-group { padding: 16px 18px; }
+.review-group-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.review-place { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--ink); }
+.review-source { font-size: 13px; color: var(--ink-3); word-break: break-word; }
+.review-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.review-item { border-top: 1px solid var(--rule-soft); padding: 12px 0; }
+.review-item p { margin: 4px 0; font-size: 14px; }
+.review-item-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.review-item-head h3 { margin: 0; font-size: 15px; }
+.review-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.review-quote {
+  margin: 8px 0 0; padding: 8px 12px; border-left: 3px solid var(--camel); background: var(--surface);
+  font-size: 13px; color: var(--ink-2); white-space: pre-wrap; border-radius: 0 6px 6px 0;
+}
+.rule-meta .ok { color: var(--pass); font-weight: 600; }
+
+.lane-toggle { margin-bottom: 14px; }
+.change-summary { margin: 8px 0 4px; font-size: 14px; }
+.proposed { margin: 4px 0 8px; padding-left: 0; list-style: none; font-size: 13px; }
+.proposed li { margin: 3px 0; }
+.act {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  padding: 1px 6px; border-radius: 4px; background: var(--surface); color: var(--ink-2);
+}
+.act-add { background: var(--pass-soft); color: var(--pass); }
+.act-update { background: var(--inconclusive-soft); color: var(--umber); }
+.act-remove { background: var(--fail-soft); color: var(--fail); }
+.diff {
+  max-height: 360px; overflow: auto; margin: 8px 0 0; padding: 10px 12px; font-size: 12px;
+  line-height: 1.5; background: #fbfbfb; border: 1px solid var(--rule-soft); border-radius: 8px;
+  white-space: pre-wrap; word-break: break-word;
+}
+.diff .add { background: var(--pass-soft); color: #1d5a2e; display: block; }
+.diff .del { background: var(--fail-soft); color: #8a1a1e; display: block; text-decoration: line-through; text-decoration-color: rgba(138, 26, 30, .35); }
+.diff .hunk { color: var(--ink-3); display: block; }
+
+.discovery { display: flex; flex-direction: column; gap: 16px; }
+.discovery-card { padding: 18px 20px; }
+.discovery-card h3 { margin: 0 0 6px; }
+.discovery-card .page-sub { margin-bottom: 14px; }
+.discovery-single { display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+.picker { position: relative; }
+.picker input { font: inherit; font-size: 14px; padding: 7px 12px; border: 1px solid var(--rule); border-radius: var(--radius-sm); width: 300px; max-width: 100%; }
+.picker-results { position: absolute; z-index: 10; top: calc(100% + 4px); left: 0; width: 340px; list-style: none; margin: 0; padding: 4px; }
+.picker-results button { width: 100%; text-align: left; background: none; border: 0; padding: 7px 10px; border-radius: 8px; font: inherit; font-size: 14px; cursor: pointer; }
+.picker-results button:hover { background: var(--brand-soft); }
+.picked { font-weight: 600; display: inline-flex; gap: 8px; align-items: center; }
+.job-card { padding: 16px 18px; }
+.job-card h3 { margin: 0; font-size: 15px; }
+.progress { height: 8px; background: var(--surface); border-radius: 999px; overflow: hidden; margin: 10px 0 4px; }
+.progress span { display: block; height: 100%; background: var(--brand); transition: width .4s ease; }
+.steps { margin: 8px 0; padding-left: 20px; font-size: 14px; }
+.add-channel { padding: 18px 20px; margin-top: 16px; }
+.add-channel h3 { margin: 0; }
+.audit-table td { vertical-align: top; }
+.audit-table td:last-child { text-align: left; }
+.audit-detail { color: var(--ink-3); max-width: 420px; word-break: break-word; }
+.bulk-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 16px; margin-bottom: 12px; font-size: 14px; background: var(--brand-soft); border-color: transparent; }
+.health .source-list { margin-bottom: 24px; }
+.health .codes-table td:last-child { text-align: left; }
+
+@media (max-width: 720px) {
+  .review-item-head, .review-group-head, .queue-item { flex-direction: column; }
+  .review-actions { justify-content: flex-start; }
+  .field-row { flex-direction: column; }
+}
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.status-dot-verified { background: var(--pass); }
+.status-dot-pending { background: var(--warn, #c28a00); }
+.codes-table td:last-child { text-align: left; }
+.detail-tabs .seg-btn { padding-left: 10px; padding-right: 10px; }

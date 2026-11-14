@@ -13,7 +13,7 @@ from app.models import (
     SourceStatus,
     Taxonomy,
 )
-from app.worker import run_daily
+from app.monitor import run_daily
 
 
 def _county(session: Session) -> Jurisdiction:
@@ -60,6 +60,6 @@ def test_seed_taxonomy_is_idempotent(session: Session) -> None:
 
 
 def test_daily_worker_records_job_run(session: Session) -> None:
-    run = run_daily(session)
+    run = run_daily(session).run
     assert run.status == JobStatus.SUCCEEDED
     assert run.finished_at is not None

@@ -129,7 +129,13 @@ export default function JurisdictionPanel({ detail, loading, error, address, onS
         </section>
       )}
 
-      <RegulationsSection fips={j.fips} placeName={j.name} isPilot={j.is_pilot} />
+      <RegulationsSection
+        fips={j.fips}
+        placeName={j.name}
+        isPilot={j.is_pilot}
+        stack={address ? address.stack : detail.stack}
+        address={address?.matched_address ?? null}
+      />
     </div>
   )
 }

@@ -254,6 +254,7 @@ class Rule(Base):
     grounded: Mapped[bool | None] = mapped_column(Boolean)  # excerpt found verbatim
     supersedes_id: Mapped[int | None] = mapped_column(ForeignKey("rules.id"))
     submitted_by_name: Mapped[str | None] = mapped_column(Unicode(128))
+    review_note: Mapped[str | None] = mapped_column(UnicodeText)  # e.g. the reject reason
     created_at: Mapped[datetime] = _now()
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
     verified_at: Mapped[datetime | None]
@@ -322,6 +323,10 @@ class JobRun(Base):
     sources_checked: Mapped[int] = mapped_column(Integer, default=0)
     changes_found: Mapped[int] = mapped_column(Integer, default=0)
     errors: Mapped[list[Any] | None]
+    # Progress for long jobs (bulk discovery): items planned / done, plus a free-form summary.
+    total: Mapped[int | None]
+    done: Mapped[int] = mapped_column(Integer, default=0)
+    summary: Mapped[dict[str, Any] | None]
 
 
 class TeamsChannel(Base):

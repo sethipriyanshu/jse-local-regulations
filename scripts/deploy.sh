@@ -22,6 +22,11 @@ deploy_infra() {
     -p env="$ENV_NAME" image="$image" \
        sqlAdminPassword="${SQL_ADMIN_PASSWORD:?set SQL_ADMIN_PASSWORD}" \
        adminPasscode="${ADMIN_PASSCODE:?set ADMIN_PASSCODE}" \
+       azureOpenAiEndpoint="${AZURE_OPENAI_ENDPOINT:?set AZURE_OPENAI_ENDPOINT}" \
+       azureOpenAiKey="${AZURE_OPENAI_API_KEY:?set AZURE_OPENAI_API_KEY}" \
+       azureOpenAiDeployment="${AZURE_OPENAI_DEPLOYMENT:-gpt-4.1-mini}" \
+       teamsWebhookUrl="${TEAMS_WEBHOOK_URL:-}" \
+       publicBaseUrl="${PUBLIC_BASE_URL:-}" \
     --query properties.outputs -o json
 }
 

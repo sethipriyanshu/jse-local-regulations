@@ -145,3 +145,14 @@ def counties_for_place(session: Session, place: Jurisdiction) -> list[Jurisdicti
         .where(PlaceCounty.place_id == place.id)
         .order_by(Jurisdiction.name)
     ))
+
+
+def default_stack(session: Session, j: Jurisdiction) -> list[Jurisdiction]:
+    """The stack shown for a jurisdiction selected without an address. A city that spans
+    several counties gets no county layer, since which one applies depends on the address."""
+    if len(j.fips) == 5:
+        return build_stack(session, county=j)
+    if len(j.fips) == 7:
+        counties = counties_for_place(session, j)
+        return build_stack(session, county=counties[0] if len(counties) == 1 else None, place=j)
+    return [j]

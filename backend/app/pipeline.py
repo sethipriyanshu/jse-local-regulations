@@ -110,6 +110,15 @@ def ingest_source(
     return result
 
 
+def extract_saved_snapshot(
+    session: Session, source: Source, snapshot: Snapshot, provider: LLMProvider | None = None
+) -> ExtractStats:
+    """Run extraction on a snapshot that is already stored, e.g. after an admin approves
+    a detected change."""
+    text = get_store().get(snapshot.blob_text).decode()
+    return extract_snapshot(session, provider or get_provider(), source, snapshot, text)
+
+
 def ingest_in_background(session_factory: Callable[[], Session], source_id: int,
                          force_extract: bool = False) -> None:
     """Entry point for FastAPI BackgroundTasks: own session, never raises."""

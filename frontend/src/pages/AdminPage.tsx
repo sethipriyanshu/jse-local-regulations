@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import SourceQueue from '../components/SourceQueue'
+import AuditLog from '../components/admin/AuditLog'
+import ChangeReview from '../components/admin/ChangeReview'
+import DiscoveryPanel from '../components/admin/DiscoveryPanel'
+import HealthPanel from '../components/admin/HealthPanel'
+import RuleReview from '../components/admin/RuleReview'
+import TeamsSettings from '../components/admin/TeamsSettings'
 import { useAdmin } from '../lib/admin'
+import { getOverview, type Overview } from '../lib/adminApi'
 import { ApiError } from '../lib/api'
 import { getQueue, type Queue } from '../lib/sources'
 
@@ -12,47 +20,92 @@ export default function AdminPage() {
   return <AdminConsole onLogout={() => void logout()} />
 }
 
+type Tab = 'sources' | 'rules' | 'changes' | 'discovery' | 'health' | 'teams' | 'audit'
+
 function AdminConsole({ onLogout }: { onLogout: () => void }) {
+  const [params, setParams] = useSearchParams()
+  const tab = (params.get('tab') as Tab | null) ?? 'sources'
+  const setTab = (t: Tab) => setParams(t === 'sources' ? {} : { tab: t }, { replace: true })
+
   const [queue, setQueue] = useState<Queue | null>(null)
+  const [overview, setOverview] = useState<Overview | null>(null)
   const [error, setError] = useState(false)
   const load = useCallback(() => {
     getQueue().then(setQueue).catch(() => setError(true))
+    getOverview().then(setOverview).catch(() => {})
   }, [])
   useEffect(load, [load])
 
+  const c = overview?.counts ?? queue?.counts
+  const tabs: [Tab, string, number | undefined][] = [
+    ['sources', 'Sources', c?.sources],
+    ['rules', 'Rules', c?.rules],
+    ['changes', 'Changes', c?.changes],
+    ['discovery', 'AI discovery', undefined],
+    ['health', 'Jobs & health', overview?.unhealthy_sources.length || undefined],
+    ['teams', 'Teams', undefined],
+    ['audit', 'Audit log', undefined],
+  ]
+
   return (
-    <div className="page">
+    <div className="page page-wide">
       <p className="eyebrow">Admin</p>
       <div className="page-head">
-        <h1 className="page-title">Review queue</h1>
+        <h1 className="page-title">Review &amp; operations</h1>
         <button type="button" className="btn btn-secondary" onClick={onLogout}>
           Exit admin view
         </button>
       </div>
-      <p className="page-sub">
-        Approve sources to start monitoring them; the AI extracts their MEP rules as pending items.
-      </p>
 
       <div className="stat-row">
-        <Stat label="Sources to review" value={queue?.counts.sources} />
-        <Stat label="Rules pending verification" value={queue?.counts.rules} hint="Review UI arrives in week 5" />
-        <Stat label="Detected changes" value={queue?.counts.changes} hint="Daily monitor arrives in week 7" />
+        <Stat label="Sources to review" value={c?.sources} onClick={() => setTab('sources')} />
+        <Stat label="Rules pending verification" value={c?.rules} onClick={() => setTab('rules')} />
+        <Stat label="Detected changes" value={c?.changes} onClick={() => setTab('changes')} />
+        <Stat label="Verified rules" value={overview?.counts.verified_rules} />
       </div>
 
-      <h2 className="section-title">Submitted sources</h2>
-      {error && <p className="form-error">Could not load the queue.</p>}
-      {!queue && !error && <div className="skeleton skeleton-block" />}
-      {queue && <SourceQueue sources={queue.sources} onChanged={load} />}
+      <nav className="admin-tabs" role="tablist">
+        {tabs.map(([t, text, n]) => (
+          <button key={t} type="button" role="tab" aria-selected={tab === t}
+            className={`admin-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+            {text}
+            {n ? <span className="tab-count">{n}</span> : null}
+          </button>
+        ))}
+      </nav>
+
+      {tab === 'sources' && (
+        <>
+          <p className="page-sub">
+            Approve sources to start monitoring them; the AI extracts their MEP rules as pending items
+            for the Rules tab. AI-suggested sources are listed first, best match first.
+          </p>
+          {error && <p className="form-error">Could not load the queue.</p>}
+          {!queue && !error && <div className="skeleton skeleton-block" />}
+          {queue && <SourceQueue sources={queue.sources} onChanged={load} />}
+        </>
+      )}
+      {tab === 'rules' && <RuleReview onChanged={load} />}
+      {tab === 'changes' && <ChangeReview onChanged={load} />}
+      {tab === 'discovery' && <DiscoveryPanel onFinished={load} />}
+      {tab === 'health' && <HealthPanel overview={overview} />}
+      {tab === 'teams' && <TeamsSettings />}
+      {tab === 'audit' && <AuditLog />}
     </div>
   )
 }
 
-function Stat({ label, value, hint }: { label: string; value: number | undefined; hint?: string }) {
-  return (
-    <div className="card stat" title={hint}>
+function Stat({ label, value, onClick }: { label: string; value: number | undefined; onClick?: () => void }) {
+  const body = (
+    <>
       <span className="stat-value">{value ?? '–'}</span>
       <span className="stat-label">{label}</span>
-    </div>
+    </>
+  )
+  return onClick ? (
+    <button type="button" className="card stat stat-btn" onClick={onClick}>{body}</button>
+  ) : (
+    <div className="card stat">{body}</div>
   )
 }
 

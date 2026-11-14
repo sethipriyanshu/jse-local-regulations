@@ -29,6 +29,7 @@ export type Source = {
 export type Rule = {
   id: number
   jurisdiction_fips: string
+  jurisdiction_name: string
   title: string
   summary: string
   excerpt: string | null
@@ -45,6 +46,9 @@ export type Rule = {
   source_url: string | null
   source_title: string | null
   submitted_by_name: string | null
+  review_note: string | null
+  supersedes_id: number | null
+  snapshot_id: number | null
   created_at: string
   verified_at: string | null
 }

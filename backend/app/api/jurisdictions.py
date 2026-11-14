@@ -10,10 +10,11 @@ from app.geocode import GeocodeError, geocode_address
 from app.jurisdictions import (
     build_stack,
     counties_for_place,
+    default_stack,
     link_place_county,
     places_in_county,
 )
-from app.models import Coverage, Jurisdiction, JurisdictionType
+from app.models import Coverage, Jurisdiction, JurisdictionType, PlaceCounty
 
 router = APIRouter(tags=["jurisdictions"])
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -98,13 +99,31 @@ def search(
 
 
 @router.get("/jurisdictions/coverage", response_model=list[CoverageItem])
-def coverage(session: SessionDep) -> list[Jurisdiction]:
-    """Jurisdictions the map should shade: pilots and anything with data."""
-    return list(session.scalars(
+def coverage(session: SessionDep) -> list[CoverageItem]:
+    """Jurisdictions the map should shade: pilots and anything with data. The map only
+    draws counties, so a county with no data of its own shows as partial when one of
+    its cities has data."""
+    rows = session.scalars(
         select(Jurisdiction).where(
             or_(Jurisdiction.is_pilot.is_(True), Jurisdiction.coverage != Coverage.NONE)
         )
-    ))
+    ).all()
+    items = {j.fips: CoverageItem(fips=j.fips, coverage=j.coverage, is_pilot=j.is_pilot,
+                                  pilot_metro=j.pilot_metro) for j in rows}
+    covered_places = [j.id for j in rows if len(j.fips) == 7 and j.coverage != Coverage.NONE]
+    if covered_places:
+        county_rows = session.scalars(
+            select(Jurisdiction).join(PlaceCounty, PlaceCounty.county_id == Jurisdiction.id)
+            .where(PlaceCounty.place_id.in_(covered_places))
+        ).all()
+        for c in county_rows:
+            item = items.get(c.fips)
+            if item is None:
+                items[c.fips] = CoverageItem(fips=c.fips, coverage=Coverage.PARTIAL,
+                                             is_pilot=c.is_pilot, pilot_metro=c.pilot_metro)
+            elif item.coverage == Coverage.NONE:
+                item.coverage = Coverage.PARTIAL
+    return list(items.values())
 
 
 @router.get("/jurisdictions/{fips}", response_model=JurisdictionDetail)
@@ -113,19 +132,11 @@ def detail(fips: str, session: SessionDep) -> JurisdictionDetail:
     if j is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No jurisdiction with FIPS {fips}")
 
-    places: list[Jurisdiction] = []
-    counties: list[Jurisdiction] = []
-    if len(j.fips) == 5:
-        stack = build_stack(session, county=j)
-        places = places_in_county(session, j)
-    elif len(j.fips) == 7:
-        counties = counties_for_place(session, j)
-        stack = build_stack(session, county=counties[0] if len(counties) == 1 else None, place=j)
-    else:
-        stack = [j]
+    places = places_in_county(session, j) if len(j.fips) == 5 else []
+    counties = counties_for_place(session, j) if len(j.fips) == 7 else []
     return JurisdictionDetail(
         jurisdiction=JurisdictionOut.model_validate(j),
-        stack=_out(stack),
+        stack=_out(default_stack(session, j)),
         places=_out(places),
         counties=_out(counties),
     )

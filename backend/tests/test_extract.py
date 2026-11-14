@@ -130,3 +130,31 @@ def test_reextract_does_not_duplicate(
     stats = extract_snapshot(session, FakeProvider(EXTRACTION), src, snap, PAGE)
     assert stats.rules_added == 0 and stats.adoptions_added == 0
     assert stats.skipped_duplicates == 3
+
+
+def test_same_adoption_quoted_twice_is_one_row(session: Session) -> None:
+    from app.extract import extract_snapshot
+    from tests.helpers import add_source, make_world
+
+    w = make_world(session)
+    src = add_source(session, w.city, "https://city.gov/codes")
+    snap = Snapshot(source_id=src.id, content_hash="h", blob_raw="r", blob_text="t", char_count=10)
+    session.add(snap)
+    session.commit()
+    text = "Residential: the 2015 IECC applies. Commercial: ASHRAE 90.1 2013 or the 2015 IECC."
+
+    class Twice:
+        name = "fake"
+
+        def structured(self, *_a: object, **_k: object) -> LLMResult:
+            a = {"code": "IECC", "edition": "2015", "amendments_summary": "",
+                 "effective_on": "", "confidence": 0.9}
+            return LLMResult({"code_adoptions": [
+                {**a, "excerpt": "Residential: the 2015 IECC applies."},
+                {**a, "excerpt": "Commercial: ASHRAE 90.1 2013 or the 2015 IECC."},
+            ], "rules": []}, 10, 10, "f")
+
+    stats = extract_snapshot(session, Twice(), src, snap, text)
+    assert stats.adoptions_added == 1 and stats.skipped_duplicates == 1
+    again = extract_snapshot(session, Twice(), src, snap, text)
+    assert again.adoptions_added == 0

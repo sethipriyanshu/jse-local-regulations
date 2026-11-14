@@ -13,6 +13,7 @@ from rapidfuzz import fuzz
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.coverage import refresh_coverage
 from app.llm import LLMProvider, run_structured
 from app.models import (
     CodeAdoption,
@@ -144,10 +145,11 @@ def extract_snapshot(
     adopted_cat = tax.get((TaxonomyKind.CATEGORY, "adopted_code"))
 
     # Fingerprints of what this source already produced, so re-extraction doesn't duplicate.
-    seen = {
-        _fingerprint(r.title, r.excerpt or "")
-        for r in session.scalars(select(Rule).where(Rule.source_id == source.id))
-    }
+    existing = list(session.scalars(select(Rule).where(Rule.source_id == source.id)))
+    seen = {_fingerprint(r.title, r.excerpt or "") for r in existing}
+    # One adoption per (code, edition) per source, however many passages mention it.
+    seen |= {_adoption_key(r.code_ref or "", r.code_edition or "")
+             for r in existing if r.category_id == adopted_cat}
     stats = ExtractStats()
     jur_label = f"{jur.name}, {jur.state_code} ({jur.type.value})"
 
@@ -164,11 +166,11 @@ def extract_snapshot(
             if a["confidence"] < MIN_CONFIDENCE or not a["edition"]:
                 continue
             title = f"{a['code']} {a['edition']} adopted"
-            fp = _fingerprint(title, a["excerpt"])
-            if fp in seen:
+            key = _adoption_key(a["code"], a["edition"])
+            if key in seen:
                 stats.skipped_duplicates += 1
                 continue
-            seen.add(fp)
+            seen.add(key)
             grounded = is_grounded(a["excerpt"], chunk)
             stats.ungrounded += not grounded
             rule = Rule(
@@ -213,8 +215,14 @@ def extract_snapshot(
             stats.rules_added += 1
         session.commit()
 
+    refresh_coverage(session, jur.id)
+    session.commit()
     log.info("extracted source %s snapshot %s: %s", source.id, snapshot.id, stats)
     return stats
+
+
+def _adoption_key(code: str, edition: str) -> str:
+    return "adopt|" + _norm(code) + "|" + _norm(edition)[:32]
 
 
 def _discipline_for_code(code: str) -> str:

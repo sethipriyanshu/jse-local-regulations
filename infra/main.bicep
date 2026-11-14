@@ -35,6 +35,22 @@ param adminPasscode string
 @secure()
 param sessionSecret string = newGuid()
 
+@description('Azure OpenAI / Foundry endpoint, e.g. https://jse-openai.openai.azure.com/')
+param azureOpenAiEndpoint string
+
+@description('Azure OpenAI deployment name (the model is swappable here).')
+param azureOpenAiDeployment string = 'gpt-4.1-mini'
+
+@secure()
+param azureOpenAiKey string
+
+@secure()
+@description('Optional Teams Workflows webhook that receives the digest and alerts. More channels can be added in the admin view.')
+param teamsWebhookUrl string = ''
+
+@description('Public URL of the app, for links in Teams cards. Set after the first deploy (the API app FQDN).')
+param publicBaseUrl string = ''
+
 @description('Daily monitor schedule, UTC cron. 11:00 UTC = 6 AM Eastern (standard time).')
 param dailyCron string = '0 11 * * *'
 
@@ -148,20 +164,30 @@ resource cae 'Microsoft.App/managedEnvironments@2024-03-01' = {
 var databaseUrl = 'mssql+pymssql://${sqlAdminLogin}:${uriComponent(sqlAdminPassword)}@${sqlServer.properties.fullyQualifiedDomainName}:1433/${dbName}'
 var storageConn = 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
 
-var secrets = [
+var secrets = concat([
   { name: 'database-url', value: databaseUrl }
   { name: 'storage-conn', value: storageConn }
   { name: 'admin-passcode', value: adminPasscode }
   { name: 'session-secret', value: sessionSecret }
-]
+  { name: 'azure-openai-key', value: azureOpenAiKey }
+], empty(teamsWebhookUrl) ? [] : [
+  { name: 'teams-webhook', value: teamsWebhookUrl }
+])
 
-var appEnv = [
+var appEnv = concat([
   { name: 'ENV', value: env }
   { name: 'DATABASE_URL', secretRef: 'database-url' }
   { name: 'STORAGE_CONNECTION_STRING', secretRef: 'storage-conn' }
   { name: 'ADMIN_PASSCODE', secretRef: 'admin-passcode' }
   { name: 'SESSION_SECRET', secretRef: 'session-secret' }
-]
+  { name: 'AZURE_OPENAI_ENDPOINT', value: azureOpenAiEndpoint }
+  { name: 'AZURE_OPENAI_DEPLOYMENT', value: azureOpenAiDeployment }
+  { name: 'AZURE_OPENAI_API_KEY', secretRef: 'azure-openai-key' }
+], empty(teamsWebhookUrl) ? [] : [
+  { name: 'TEAMS_WEBHOOK_URL', secretRef: 'teams-webhook' }
+], empty(publicBaseUrl) ? [] : [
+  { name: 'PUBLIC_BASE_URL', value: publicBaseUrl }
+])
 
 var registries = [ { server: acr.properties.loginServer, identity: identity.id } ]
 

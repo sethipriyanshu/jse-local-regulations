@@ -33,6 +33,17 @@ class Settings(BaseSettings):
     llm_price_in_per_m: float = 0.40
     llm_price_out_per_m: float = 1.60
 
+    # Web search for source discovery (Azure OpenAI Responses API "web_search" tool).
+    # The tool is billed per call on top of tokens; this is an estimate for the cost panel.
+    llm_web_search_price_per_call: float = 0.01
+    discovery_interval_s: float = 20.0  # pause between jurisdictions in bulk discovery
+
+    # Microsoft Teams: a Workflows webhook that receives the daily digest and alerts in
+    # addition to any channels added in the admin view. Optional.
+    teams_webhook_url: str = ""
+    # Where the app is reachable, for deep links in Teams cards.
+    public_base_url: str = "http://localhost:5173"
+
     # Fetcher etiquette.
     fetch_user_agent: str = (
         "JSE-RegsBot/0.1 (internal regulations tracker; Jordan & Skala Engineers)"

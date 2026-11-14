@@ -1,6 +1,6 @@
 # JSE Local Regulations Portal — Project Plan
 
-**Owner:** psethi (solo developer) · **Sponsor:** Jordan & Skala Engineers (JSE) · **Status:** Planning (MVP) · **Drafted:** 2026-11-01 · **Revised:** 2026-11-01 (sponsor answers applied)
+**Owner:** psethi (solo developer) · **Sponsor:** Jordan & Skala Engineers (JSE) · **Status:** MVP features built (weeks 1–8); seeding and Azure deploy next · **Drafted:** 2026-11-01 · **Revised:** 2026-11-14
 
 An internal JSE portal that tracks the location-specific rules that affect MEP design: adopted code editions, local amendments, permitting and submittal requirements, utility rules, and newly passed ordinances. Engineers pick a place on a map (or type a project address) and get a sourced, current, exportable summary of what applies there.
 
@@ -316,6 +316,8 @@ audit_log       (id, actor,                            -- 'admin' or free-text n
 ---
 
 ## 8. Delivery plan (solo, weekly milestones)
+
+**Progress (2026-11-14):** weeks 1–8 are built and tested. Weeks 3–4: Municode and AmLegal block bots, so content from them comes in by PDF upload (decision 0002). Weeks 5–8: discovery uses the Responses API `web_search` tool instead of a separate Bing resource, and PDF uses reportlab instead of Playwright (decision 0003). Remaining: SEED-* (admin review time), OPS-2 handoff (admin guide written), the first Azure deploy, and the 14-day burn-in.
 
 | Week | Milestone | Backlog | Demo at end of week |
 |---|---|---|---|

@@ -118,3 +118,19 @@ def test_pdf_fetch_and_404(monkeypatch: pytest.MonkeyPatch) -> None:
     assert r.ok and r.content_type == "application/pdf"
     assert "2020 National Electrical Code" in r.text
     assert fetcher.fetch("https://state.gov/gone", client=client).health == SourceHealth.NOT_FOUND
+
+
+def test_link_only_code_list_is_kept() -> None:
+    from app.fetcher import _block_text, html_to_text
+
+    items = "".join(f'<li><a href="https://codes.iccsafe.org/{c}">2021 International {c} Code</a></li>'
+                    for c in ["Building", "Plumbing", "Mechanical", "Fuel Gas", "Fire"])
+    html = (f"<html><head><title>Adopted Codes</title></head><body><nav>Home | News</nav>"
+            f"<main><h2>Adopted Codes</h2><h4>Commercial</h4><ul>{items}</ul>"
+            f"<p>Check local ordinances for amendments.</p></main><footer>© City</footer></body></html>")
+    text, title = html_to_text(html)
+    assert title == "Adopted Codes"
+    assert "2021 International Plumbing Code" in text.splitlines()
+    fallback = _block_text(html)
+    assert "Home | News" not in fallback and "© City" not in fallback
+    assert "2021 International Fire Code" in fallback

@@ -1,18 +1,36 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError } from '../lib/api'
+import { approveSources } from '../lib/adminApi'
 import { approveSource, displayUrl, rejectSource, type Source } from '../lib/sources'
 
 type Props = { sources: Source[]; onChanged: () => void }
 
 export default function SourceQueue({ sources, onChanged }: Props) {
+  const [busy, setBusy] = useState(false)
   if (sources.length === 0) {
     return <p className="queue-empty">No sources waiting for review. Nice.</p>
   }
+  // Official (.gov etc.) AI suggestions that the site lets us read are safe to approve in bulk.
+  const easy = sources.filter((s) => s.origin === 'ai' && s.official && s.health !== 'blocked')
   return (
-    <ul className="queue-list">
-      {sources.map((s) => <QueueItem key={s.id} s={s} onChanged={onChanged} />)}
-    </ul>
+    <>
+      {easy.length > 1 && (
+        <div className="bulk-bar card">
+          <span>{easy.length} AI suggestions are on official government domains.</span>
+          <button type="button" className="btn btn-secondary btn-sm" disabled={busy}
+            onClick={() => {
+              setBusy(true)
+              approveSources(easy.map((s) => s.id)).then(onChanged).finally(() => setBusy(false))
+            }}>
+            Approve all {easy.length}
+          </button>
+        </div>
+      )}
+      <ul className="queue-list">
+        {sources.map((s) => <QueueItem key={s.id} s={s} onChanged={onChanged} />)}
+      </ul>
+    </>
   )
 }
 
@@ -53,6 +71,7 @@ function QueueItem({ s, onChanged }: { s: Source; onChanged: () => void }) {
           {s.official && <span className="tag tag-ok">Official domain</span>}
           {s.is_upload && <span className="tag">PDF upload</span>}
           {s.origin === 'ai' && <span className="tag">AI suggested</span>}
+          {s.health === 'blocked' && <span className="tag tag-warn">Site blocks bots · upload PDF</span>}
         </div>
         {s.note && <p className="queue-note">“{s.note}”</p>}
         {s.discovery_reason && <p className="queue-note">{s.discovery_reason}</p>}

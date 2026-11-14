@@ -61,6 +61,20 @@ def main() -> None:
     with Session(get_engine()) as session:
         log.info("taxonomy rows added: %d", seed_taxonomy(session))
         log.info("jurisdictions added: %d", load_jurisdictions(session))
+        log.info("coverage updated for %d jurisdictions", recompute_coverage(session))
+
+
+def recompute_coverage(session: Session) -> int:
+    """Refresh stored coverage for every jurisdiction that has rules or sources, so map
+    shading is right after upgrades that change the coverage rules."""
+    from app.coverage import refresh_coverage
+    from app.models import Rule, Source
+
+    ids = set(session.scalars(select(Rule.jurisdiction_id).distinct())) | set(
+        session.scalars(select(Source.jurisdiction_id).distinct()))
+    refresh_coverage(session, *ids)
+    session.commit()
+    return len(ids)
 
 
 if __name__ == "__main__":

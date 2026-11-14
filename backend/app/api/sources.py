@@ -20,8 +20,11 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.admin_auth import is_admin, require_admin
 from app.audit import actor_for, record
+from app.coverage import refresh_coverage
 from app.db import get_session, get_session_factory
 from app.models import (
+    ChangeEvent,
+    ChangeStatus,
     Jurisdiction,
     Origin,
     Rule,
@@ -34,6 +37,7 @@ from app.models import (
 )
 from app.pipeline import UPLOAD_SCHEME, ingest_in_background, upload_blob_name
 from app.storage import get_store
+from app.teams import notify_submission
 from app.urls import (
     UnsafeUrl,
     assert_public,
@@ -93,6 +97,7 @@ class TaxonomyOut(BaseModel):
 class RuleOut(BaseModel):
     id: int
     jurisdiction_fips: str
+    jurisdiction_name: str
     title: str
     summary: str
     excerpt: str | None
@@ -109,6 +114,9 @@ class RuleOut(BaseModel):
     source_url: str | None
     source_title: str | None
     submitted_by_name: str | None
+    review_note: str | None
+    supersedes_id: int | None
+    snapshot_id: int | None
     created_at: datetime
     verified_at: datetime | None
 
@@ -171,22 +179,26 @@ def _source_out(session: Session, sources: list[Source]) -> list[SourceOut]:
 
 
 def _rule_out(session: Session, rules: list[Rule]) -> list[RuleOut]:
+    if not rules:
+        return []
     tax = {t.id: t.key for t in session.scalars(select(Taxonomy))}
     src_ids = {r.source_id for r in rules if r.source_id}
     srcs = {s.id: s for s in session.scalars(select(Source).where(Source.id.in_(src_ids)))}
-    jurs = {j.id: j.fips for j in session.scalars(
+    jurs = {j.id: j for j in session.scalars(
         select(Jurisdiction).where(Jurisdiction.id.in_({r.jurisdiction_id for r in rules})))}
     out = []
     for r in rules:
         src = srcs.get(r.source_id) if r.source_id else None
         out.append(RuleOut(
-            id=r.id, jurisdiction_fips=jurs[r.jurisdiction_id], title=r.title, summary=r.summary,
+            id=r.id, jurisdiction_fips=jurs[r.jurisdiction_id].fips,
+            jurisdiction_name=jurs[r.jurisdiction_id].name, title=r.title, summary=r.summary,
             excerpt=r.excerpt, discipline=tax.get(r.discipline_id) if r.discipline_id else None,
             category=tax.get(r.category_id) if r.category_id else None, code_ref=r.code_ref,
             code_edition=r.code_edition, effective_on=r.effective_on, status=r.status,
             origin=r.origin, confidence=r.confidence, grounded=r.grounded,
             source_id=r.source_id, source_url=src.url if src else None,
             source_title=src.title if src else None, submitted_by_name=r.submitted_by_name,
+            review_note=r.review_note, supersedes_id=r.supersedes_id, snapshot_id=r.snapshot_id,
             created_at=r.created_at, verified_at=r.verified_at,
         ))
     return out
@@ -260,6 +272,8 @@ def submit_source(
     session.commit()
     if admin:
         tasks.add_task(ingest_in_background, factory, src.id)
+    else:
+        tasks.add_task(notify_submission, factory, src.id)
     return _source_out(session, [src])[0]
 
 
@@ -301,6 +315,8 @@ async def upload_document(
     session.commit()
     if admin:
         tasks.add_task(ingest_in_background, factory, src.id)
+    else:
+        tasks.add_task(notify_submission, factory, src.id)
     return _source_out(session, [src])[0]
 
 
@@ -358,6 +374,7 @@ def add_rule(fips: str, body: RuleIn, session: SessionDep, admin: AdminDep) -> R
     session.flush()
     record(session, actor_for(admin, body.submitted_by_name), "rule.submit", "rule", rule.id,
            after={"title": rule.title})
+    refresh_coverage(session, j.id)
     session.commit()
     return _rule_out(session, [rule])[0]
 
@@ -374,9 +391,14 @@ def queue(session: SessionDep) -> QueueOut:
     ).all()
     pending_rules = session.scalar(
         select(func.count()).select_from(Rule).where(Rule.status == RuleStatus.PENDING)) or 0
+    new_changes = session.scalar(
+        select(func.count()).select_from(ChangeEvent).where(
+            ChangeEvent.status == ChangeStatus.NEW, ChangeEvent.mep_relevant.is_not(False))) or 0
+    # AI suggestions first by score, then user submissions oldest first.
+    ordered = sorted(sources, key=lambda s: (s.origin != Origin.AI, -(s.discovery_score or 0)))
     return QueueOut(
-        sources=_source_out(session, list(sources)),
-        counts={"sources": len(sources), "rules": pending_rules, "changes": 0},
+        sources=_source_out(session, ordered),
+        counts={"sources": len(sources), "rules": pending_rules, "changes": new_changes},
     )
 
 

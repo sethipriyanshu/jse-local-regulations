@@ -92,13 +92,31 @@ def html_to_text(html: str) -> tuple[str, str | None]:
 
     title_match = re.search(r"<title[^>]*>(.*?)</title>", html, re.S | re.I)
     title = re.sub(r"\s+", " ", title_match.group(1)).strip() if title_match else None
-    text = trafilatura.extract(
+    main = normalize_text(trafilatura.extract(
         html, include_tables=True, include_links=False, favor_recall=True, deduplicate=True
-    )
-    if not text:  # fall back to crude tag stripping
-        text = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html, flags=re.S | re.I)
-        text = re.sub(r"<[^>]+>", " ", text)
-    return normalize_text(text), title
+    ) or "")
+    # trafilatura drops link-only lists as boilerplate, and an adopted-codes page is often
+    # exactly that (each code links to the ICC viewer). When it keeps less than half of
+    # the page's text, use the whole page body instead.
+    full = normalize_text(_block_text(html))
+    return (main if len(main) >= FALLBACK_RATIO * len(full) else full), title
+
+
+FALLBACK_RATIO = 0.5
+_DROP = re.compile(r"<(script|style|noscript|template|svg|nav|header|footer|head)\b[^>]*>.*?</\1>",
+                   re.S | re.I)
+_BLOCK = re.compile(r"</?(p|div|li|ul|ol|h[1-6]|br|tr|table|section|article|dd|dt)\b[^>]*>",
+                    re.I)
+
+
+def _block_text(html: str) -> str:
+    """Tag stripping that keeps one line per block element."""
+    from html import unescape
+
+    text = _DROP.sub(" ", re.sub(r"<!--.*?-->", " ", html, flags=re.S))
+    text = _BLOCK.sub("\n", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    return unescape(text)
 
 
 def pdf_to_text(data: bytes) -> tuple[str, str | None]:
