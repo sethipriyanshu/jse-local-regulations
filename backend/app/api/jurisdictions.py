@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import case, or_, select
+from sqlalchemy import case, or_, select, true
 from sqlalchemy.orm import Session
 
 from app.db import get_session
@@ -105,7 +105,7 @@ def coverage(session: SessionDep) -> list[CoverageItem]:
     its cities has data."""
     rows = session.scalars(
         select(Jurisdiction).where(
-            or_(Jurisdiction.is_pilot.is_(True), Jurisdiction.coverage != Coverage.NONE)
+            or_(Jurisdiction.is_pilot == true(), Jurisdiction.coverage != Coverage.NONE)
         )
     ).all()
     items = {j.fips: CoverageItem(fips=j.fips, coverage=j.coverage, is_pilot=j.is_pilot,

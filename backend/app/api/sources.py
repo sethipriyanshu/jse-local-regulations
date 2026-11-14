@@ -15,7 +15,7 @@ from fastapi import (
     status,
 )
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.admin_auth import is_admin, require_admin
@@ -34,6 +34,7 @@ from app.models import (
     SourceStatus,
     Taxonomy,
     TaxonomyKind,
+    not_false,
 )
 from app.pipeline import UPLOAD_SCHEME, ingest_in_background, upload_blob_name
 from app.storage import get_store
@@ -214,7 +215,7 @@ def _snapshot(s: Source) -> dict[str, str | None]:
 @router.get("/taxonomy", response_model=TaxonomyOut)
 def taxonomy(session: SessionDep) -> TaxonomyOut:
     rows = session.scalars(
-        select(Taxonomy).where(Taxonomy.active.is_(True)).order_by(Taxonomy.sort_order)
+        select(Taxonomy).where(Taxonomy.active == true()).order_by(Taxonomy.sort_order)
     ).all()
     item = lambda t: TaxonomyItem(key=t.key, label=t.label)  # noqa: E731
     return TaxonomyOut(
@@ -393,7 +394,7 @@ def queue(session: SessionDep) -> QueueOut:
         select(func.count()).select_from(Rule).where(Rule.status == RuleStatus.PENDING)) or 0
     new_changes = session.scalar(
         select(func.count()).select_from(ChangeEvent).where(
-            ChangeEvent.status == ChangeStatus.NEW, ChangeEvent.mep_relevant.is_not(False))) or 0
+            ChangeEvent.status == ChangeStatus.NEW, not_false(ChangeEvent.mep_relevant))) or 0
     # AI suggestions first by score, then user submissions oldest first.
     ordered = sorted(sources, key=lambda s: (s.origin != Origin.AI, -(s.discovery_score or 0)))
     return QueueOut(

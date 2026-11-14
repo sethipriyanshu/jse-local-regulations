@@ -29,6 +29,8 @@ from sqlalchemy import (
     UnicodeText,
     UniqueConstraint,
     func,
+    or_,
+    true,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -60,6 +62,12 @@ def _enum(cls: type[enum.Enum]) -> Enum:
         name=cls.__name__.lower(),
         validate_strings=True,
     )
+
+
+def not_false(col: Any) -> Any:
+    """NULL or true. Portable: SQL Server has no boolean type, so `IS NOT 0` (what
+    `.is_not(False)` renders) is a syntax error there."""
+    return or_(col.is_(None), col == true())
 
 
 def _now() -> Mapped[datetime]:

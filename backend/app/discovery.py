@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from sqlalchemy import select
+from sqlalchemy import select, true
 from sqlalchemy.orm import Session
 
 from app import fetcher
@@ -256,7 +256,7 @@ def discover(
 def pilot_targets(session: Session) -> list[Jurisdiction]:
     """Every pilot jurisdiction: states, counties, cities. States first, so the shared
     state layer is seeded before local layers."""
-    rows = list(session.scalars(select(Jurisdiction).where(Jurisdiction.is_pilot.is_(True))))
+    rows = list(session.scalars(select(Jurisdiction).where(Jurisdiction.is_pilot == true())))
     return sorted(rows, key=lambda j: (len(j.fips), j.state_code, j.name))
 
 

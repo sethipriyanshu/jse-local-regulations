@@ -12,6 +12,7 @@ from app.models import (
     Rule,
     RuleStatus,
     Source,
+    not_false,
 )
 
 
@@ -20,7 +21,7 @@ def compute_coverage(session: Session, jurisdiction_id: int) -> Coverage:
         select(func.count()).select_from(ChangeEvent)
         .join(Source, Source.id == ChangeEvent.source_id)
         .where(Source.jurisdiction_id == jurisdiction_id, ChangeEvent.status == ChangeStatus.NEW,
-               ChangeEvent.mep_relevant.is_not(False))
+               not_false(ChangeEvent.mep_relevant))
     ) or 0
     counts = dict(session.execute(
         select(Rule.status, func.count()).where(

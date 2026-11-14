@@ -14,7 +14,7 @@ from app.api.jurisdictions import JurisdictionOut
 from app.api.sources import RuleOut, _rule_out
 from app.db import get_session
 from app.exports import build_export, filename, to_docx, to_pdf
-from app.models import ChangeEvent, ChangeStatus, Jurisdiction, Rule, Source
+from app.models import ChangeEvent, ChangeStatus, Jurisdiction, Rule, Source, not_false
 from app.regulations import UnknownJurisdiction, collect, resolve_stack
 from app.review import history
 
@@ -130,7 +130,7 @@ def changes(fips: str, session: SessionDep, stack: StackQuery = None) -> list[Ch
         select(ChangeEvent).join(Source, Source.id == ChangeEvent.source_id)
         .where(Source.jurisdiction_id.in_([s.id for s in layers]),
                ChangeEvent.status != ChangeStatus.DISMISSED,
-               ChangeEvent.mep_relevant.is_not(False))
+               not_false(ChangeEvent.mep_relevant))
         .order_by(ChangeEvent.created_at.desc(), ChangeEvent.id.desc()).limit(50)
     ).all()
     return change_out(session, list(events))

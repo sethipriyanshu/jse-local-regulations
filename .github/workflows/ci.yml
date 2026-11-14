@@ -22,7 +22,7 @@ jobs:
       - run: uv run pytest
 
   migrations-sqlserver:
-    # Unit tests use SQLite; this proves the migrations apply on real SQL Server.
+    # Unit tests use SQLite; this proves migrations, the worker and the API's queries work on real SQL Server.
     runs-on: ubuntu-latest
     services:
       sqlserver:
@@ -50,6 +50,11 @@ jobs:
         run: uv run python -m app.bootstrap && uv run python -m app.bootstrap
       - name: Worker runs against SQL Server
         run: uv run python -m app.worker daily
+      - name: API queries run against SQL Server
+        run: uv run pytest tests/test_sqlserver_smoke.py
+        env:
+          RUN_DB_SMOKE: "1"
+          ADMIN_PASSCODE: ci-smoke-pass
 
   frontend:
     runs-on: ubuntu-latest

@@ -13,7 +13,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -69,7 +69,7 @@ def targets(session: Session, kind: str) -> list[Target]:
     everything; submissions go to alert channels."""
     flag = TeamsChannel.sends_digest if kind == "digest" else TeamsChannel.sends_alerts
     out = [Target(c.name, c.webhook_url, c.metro)
-           for c in session.scalars(select(TeamsChannel).where(flag.is_(True)))]
+           for c in session.scalars(select(TeamsChannel).where(flag == true()))]
     env_url = get_settings().teams_webhook_url
     if env_url:
         out.append(Target("default", env_url, None))

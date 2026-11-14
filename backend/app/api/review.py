@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import discovery, teams
@@ -32,6 +32,7 @@ from app.models import (
     SourceHealth,
     SourceStatus,
     TeamsChannel,
+    not_false,
 )
 from app.pipeline import extract_saved_snapshot, ingest_in_background
 from app.review import ReviewError, reject_rule, verify_rule
@@ -133,7 +134,7 @@ def verify_grounded(source_id: int, session: SessionDep) -> BulkOut:
     verbatim in the snapshot. Ungrounded items stay for individual review."""
     rows = session.scalars(select(Rule).where(
         Rule.source_id == source_id, Rule.status == RuleStatus.PENDING,
-        Rule.grounded.is_(True)).order_by(Rule.id)).all()
+        Rule.grounded == true()).order_by(Rule.id)).all()
     for r in rows:
         verify_rule(session, r, actor="admin (bulk)")
     session.commit()
@@ -168,7 +169,7 @@ def approve_bulk(
 def change_queue(session: SessionDep, include_irrelevant: bool = False) -> list[ChangeOut]:
     stmt = select(ChangeEvent).where(ChangeEvent.status == ChangeStatus.NEW)
     if not include_irrelevant:
-        stmt = stmt.where(ChangeEvent.mep_relevant.is_not(False))
+        stmt = stmt.where(not_false(ChangeEvent.mep_relevant))
     events = session.scalars(stmt.order_by(ChangeEvent.created_at.desc()).limit(100)).all()
     return change_out(session, list(events), with_diff=True)
 
@@ -326,7 +327,7 @@ def overview(session: SessionDep) -> OverviewOut:
             "sources": count(select(Source.id).where(Source.status == SourceStatus.SUBMITTED)),
             "rules": count(select(Rule.id).where(Rule.status == RuleStatus.PENDING)),
             "changes": count(select(ChangeEvent.id).where(
-                ChangeEvent.status == ChangeStatus.NEW, ChangeEvent.mep_relevant.is_not(False))),
+                ChangeEvent.status == ChangeStatus.NEW, not_false(ChangeEvent.mep_relevant))),
             "monitored": count(select(Source.id).where(Source.status == SourceStatus.APPROVED)),
             "verified_rules": count(select(Rule.id).where(Rule.status == RuleStatus.VERIFIED)),
         },
